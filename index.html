@@ -75,6 +75,11 @@ button.sec{background:#fff;color:#000}
   <label class="chk"><input type="checkbox" id="octa" checked>Cuenta bancaria</label>
   <label class="chk"><input type="checkbox" id="ofir" checked>Firmas</label>
  </div>
+ <div style="margin-top:14px;border-top:1px solid #000;padding-top:10px">
+  <label>A ingresar en la cuenta nº (IBAN)</label>
+  <select id="ctas" onchange="useCta()"></select>
+  <div class="bar" style="margin-top:6px"><input class="emp" id="cta" value="" placeholder="Escribe aquí el número de cuenta / IBAN" style="flex:1;min-width:220px"><button type="button" onclick="saveCta()">💾 Guardar cuenta</button><button type="button" class="sec" onclick="delCta()">🗑️ Borrar la elegida</button></div>
+ </div>
 </div>
 
 <div class="card noprint">
@@ -84,7 +89,6 @@ button.sec{background:#fff;color:#000}
   <div><label>Teléfono</label><input class="emp" id="mtel" value="616 38 50 68"></div>
   <div><label>N.I.F.</label><input class="emp" id="mnif" value="00404968 F"></div>
   <div><label>Email</label><input class="emp" id="mmail" value="paco_coca@hotmail.com"></div>
-  <div><label>IBAN / cuenta para ingresar</label><input class="emp" id="cta" value=""></div>
  </div>
  <label style="margin-top:10px">Aclaraciones (salen debajo de la Nota)</label>
  <select id="acs" onchange="addAcl()"></select>
@@ -204,6 +208,12 @@ function saveEmp(){try{const d={};EMP.forEach(k=>d[k]=$(k).value);localStorage.s
 document.querySelector('.wrap').addEventListener('input',e=>{if(e.target.classList.contains('emp'))saveEmp()});
 document.querySelector('.wrap').addEventListener('input',calc);
 document.querySelector('.wrap').addEventListener('change',calc);
+function ctaList(){try{return JSON.parse(localStorage.getItem('ctas')||'[]')}catch(e){return []}}
+function fillCtas(sel){const l=ctaList();$('ctas').innerHTML='<option value="">— Cuentas guardadas ('+l.length+') —</option>'+l.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');if(sel)$('ctas').value=sel}
+function useCta(){const s=$('ctas');if(s.value){$('cta').value=s.value;saveEmp();calc()}}
+function saveCta(){const a=$('cta').value.trim();if(!a){alert('Escribe primero el número de cuenta.');return}const l=ctaList();if(!l.includes(a)){l.push(a);try{localStorage.setItem('ctas',JSON.stringify(l))}catch(e){}}fillCtas(a);saveEmp();calc()}
+function delCta(){const s=$('ctas');if(!s.value){alert('Elige primero una cuenta de la lista de guardadas.');return}if(!confirm('¿Borrar esta cuenta de la lista?'))return;try{localStorage.setItem('ctas',JSON.stringify(ctaList().filter(x=>x!==s.value)))}catch(e){}fillCtas()}
+fillCtas();
 window.addEventListener('beforeprint',calc);
 addRow();calc();
 </script></body></html>
