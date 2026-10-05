@@ -16,11 +16,18 @@ input,select,textarea{width:100%;padding:7px;border:1px solid #000;border-radius
 button{padding:9px 14px;border:1.5px solid #000;border-radius:3px;background:#000;color:#fff;font:inherit;font-weight:700;cursor:pointer}
 button.sec{background:#fff;color:#000}
 .row{display:grid;grid-template-columns:1fr 110px 56px 36px;gap:8px;align-items:start;padding:10px 0;border-top:1px solid #000}
-.row .c{display:flex;flex-direction:column;gap:6px}
+.row .c{display:flex;flex-direction:column;gap:6px;position:relative}
 .chk{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:700}
 .chk input{width:auto}.row .chk{padding-top:24px}
-.row.k .pr,.row.k .chk{visibility:hidden}
 .x{padding:8px;margin-top:20px}
+.sv{padding:5px 10px;font-size:12px;align-self:flex-start}
+.srch{background:#f2f2f2}
+.dd{display:none;position:absolute;left:0;right:0;top:36px;z-index:20;background:#fff;border:1.5px solid #000;max-height:280px;overflow:auto;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.dd.on{display:block}
+.dd .g{background:#000;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;position:sticky;top:0}
+.dd .o{padding:7px 8px;border-bottom:1px solid #ccc;cursor:pointer;font-size:13px}
+.dd .o:hover{background:#ddd}
+.dd .n{padding:8px;font-size:13px}
 .bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
 .opts{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}
 .tot{margin-top:12px;text-align:right;font-size:16px}.tot b{font-size:20px}
@@ -35,10 +42,12 @@ button.sec{background:#fff;color:#000}
 .doc .top{border-top:2px solid #000;margin-top:10px;padding-top:6px}
 .doc .t{margin-top:18px;text-align:right}
 .doc .nota{margin-top:20px;font-size:13px}.doc .nota p{margin:4px 0}
+.doc .pgnota{break-before:page;page-break-before:always;border-top:2px dashed #888;margin-top:30px}
+.doc .pgnota:before{content:"— La nota se imprimirá en una hoja aparte —";display:block;text-align:center;font-size:11px;color:#666;padding-top:4px}
 .doc .fir{display:flex;justify-content:space-around;margin-top:30px;height:110px}
-@page{margin:14mm;@bottom-right{content:"Página " counter(page) " de " counter(pages)}}
+@page{margin:14mm}
 @media (max-width:620px){.row{grid-template-columns:1fr 90px}}
-@media print{.noprint{display:none!important}.wrap{padding:0}#pv{border:0;padding:0}}
+@media print{.noprint{display:none!important}.wrap{padding:0}#pv{border:0;padding:0}.doc .pgnota{border-top:0;margin-top:0}.doc .pgnota:before{display:none}}
 </style></head><body>
 <div class="wrap">
 <h1 class="noprint">Facturas y presupuestos — Construcciones Paco Coca</h1>
@@ -115,34 +124,60 @@ const NOTA=`- En este presupuesto entran todos los materiales y mano de obra par
 const $=id=>document.getElementById(id);
 const fmt=n=>n.toLocaleString('es-ES',{maximumFractionDigits:2})+' €';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function opts(){
- let h='<option value="">— Elegir concepto —</option><option value="__c">✏️ Personalizado</option>';
- const g=[...BASE];
- g.forEach(([n,l])=>{h+=`<optgroup label="${n}">`+l.map(([t,p])=>{const k=(p===S||p===T)?p:'';const s=t.length>70?t.slice(0,70)+'…':t;return `<option value="${esc(t)}" data-p="${k?'':p}" data-k="${k}">${esc(s)}${k?'':' — '+p+' €'}</option>`}).join('')+'</optgroup>'});
- return h}
+const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+function cust(){try{return JSON.parse(localStorage.getItem('cust')||'{}')}catch(e){return {}}}
+// Lista completa: "Mis conceptos" guardados primero; los precios guardados sustituyen a los de fábrica
+function items(){
+ const c=cust(),seen={},base=[],mine=[];
+ BASE.forEach(([g,l])=>l.forEach(([t,p])=>{seen[t]=1;base.push({g,t,p:c[t]!==undefined?c[t]:p})}));
+ Object.keys(c).forEach(t=>{if(!seen[t])mine.push({g:'⭐ Mis conceptos',t,p:c[t]})});
+ return mine.concat(base)}
+function showDD(inp){
+ const dd=inp.nextElementSibling,q=norm(inp.value).split(/\s+/).filter(Boolean);
+ const l=items().filter(i=>q.every(w=>norm(i.t).includes(w)));dd._l=l;
+ let h='<div class="o" data-i="-1">✏️ Personalizado (escribirlo yo)</div>',g='';
+ l.forEach((i,n)=>{
+  if(i.g!==g){g=i.g;h+=`<div class="g">${esc(g)}</div>`}
+  const s=i.t.length>110?i.t.slice(0,110)+'…':i.t,pr=(i.p===S||i.p===T)?'':' — '+i.p+' €';
+  h+=`<div class="o" data-i="${n}">${esc(s)}${pr}</div>`});
+ if(!l.length)h+='<div class="n">Sin resultados</div>';
+ dd.innerHTML=h;dd.classList.add('on')}
 function addRow(){
  const d=document.createElement('div');d.className='row';
- d.innerHTML=`<div class="c"><select onchange="pick(this)">${opts()}</select><textarea rows="2" placeholder="Descripción en el documento"></textarea></div>
- <div class="pr"><label>Precio €</label><input type="number" step="0.01"></div>
+ d.innerHTML=`<div class="c"><input class="srch" placeholder="🔍 Buscar concepto (ej: puerta, azulejos...)" autocomplete="off"><div class="dd"></div><textarea rows="2" placeholder="Descripción en el documento"></textarea><button type="button" class="sec sv">💾 Guardar en mi lista</button></div>
+ <div class="pr"><label>Precio €</label><input type="number" step="0.01" placeholder="opcional"></div>
  <label class="chk"><input type="checkbox" checked>IVA</label>
  <button class="x sec" onclick="this.parentNode.remove();calc()">✕</button>`;
- $('rows').appendChild(d)}
-function pick(s){
- const r=s.closest('.row'),ta=r.querySelector('textarea'),pr=r.querySelector('input[type=number]'),o=s.selectedOptions[0];
- r.dataset.k='';r.classList.remove('k');
- if(s.value==='__c'){ta.value='';pr.value='';ta.focus()}
- else if(s.value){ta.value=s.value;pr.value=o.dataset.p;if(o.dataset.k){r.dataset.k=o.dataset.k;r.classList.add('k')}}}
+ $('rows').appendChild(d);
+ const inp=d.querySelector('.srch'),dd=d.querySelector('.dd'),ta=d.querySelector('textarea'),pr=d.querySelector('input[type=number]'),sv=d.querySelector('.sv');
+ inp.addEventListener('focus',()=>showDD(inp));
+ inp.addEventListener('input',()=>showDD(inp));
+ inp.addEventListener('blur',()=>dd.classList.remove('on'));
+ dd.addEventListener('mousedown',e=>{
+  e.preventDefault();const o=e.target.closest('.o');if(!o)return;
+  const i=+o.dataset.i,it=i<0?null:dd._l[i];
+  d.dataset.k='';
+  if(!it){ta.value='';pr.value='';ta.focus()}
+  else{ta.value=it.t;if(it.p===S||it.p===T){pr.value='';d.dataset.k=it.p}else pr.value=it.p}
+  inp.value='';dd.classList.remove('on');calc()});
+ sv.addEventListener('click',()=>{
+  const t=ta.value.trim(),p=parseFloat(pr.value);
+  if(!t||!p){alert('Escribe la descripción y el precio para guardarlo en tu lista.');return}
+  const c=cust();c[t]=p;try{localStorage.setItem('cust',JSON.stringify(c))}catch(e){}
+  sv.textContent='✓ Guardado';setTimeout(()=>sv.textContent='💾 Guardar en mi lista',1500)})}
 function lines(){return [...document.querySelectorAll('.row')].map(r=>({t:r.querySelector('textarea').value.trim(),p:parseFloat(r.querySelector('input[type=number]').value),i:r.querySelector('input[type=checkbox]').checked,k:r.dataset.k||''})).filter(l=>l.t||l.p)}
 function calc(){
- const L=lines().filter(l=>!l.k&&l.p),r=(parseFloat($('iva').value)||0)/100,on=$('oiva').checked,pres=$('tipo').value==='PRESUPUESTO';
+ const L=lines().filter(l=>l.p),r=(parseFloat($('iva').value)||0)/100,on=$('oiva').checked,pres=$('tipo').value==='PRESUPUESTO';
  const sub=L.reduce((a,l)=>a+l.p,0),iva=on?L.filter(l=>l.i).reduce((a,l)=>a+l.p*r,0):0,tot=sub+iva;
  $('tot').innerHTML=on?`SUBTOTAL: ${fmt(sub)}<br>I.V.A. ${$('iva').value}%: ${fmt(iva)}<br><b>TOTAL: ${fmt(tot)}</b>`:`<b>${pres?'TOTAL DE ESTE PRESUPUESTO':'TOTAL'}: ${fmt(tot)}</b>`;
  render(sub,iva,tot,on,pres)}
 function render(sub,iva,tot,on,pres){
  const v=id=>esc($(id).value),f=$('fe').value?new Date($('fe').value+'T00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}):'';
- const rows=lines().map(l=>l.k===S?`<tr><td colspan="2" class="sec">${esc(l.t)}</td></tr>`:`<tr><td>${l.k?'':'- '}${esc(l.t).replace(/\n/g,'<br>')}</td><td class="p">${l.k||!l.p?'':fmt(l.p)}</td></tr>`).join('');
+ // Un título o texto "sin precio" se comporta como línea normal si le pones precio
+ const rows=lines().map(l=>(l.k===S&&!l.p)?`<tr><td colspan="2" class="sec">${esc(l.t)}</td></tr>`:`<tr><td>${l.k&&!l.p?'':'- '}${esc(l.t).replace(/\n/g,'<br>')}</td><td class="p">${l.p?fmt(l.p):''}</td></tr>`).join('');
  const nl=t=>esc(t).split('\n').map(x=>`<p>${x}</p>`).join('');
  const md=$('mdir').value.trim()?esc($('mdir').value.trim()).replace(/\n/g,'<br>')+'<br>':'';
+ const hasN=$('onota').checked,hasA=$('acl').value.trim();
  $('doc').innerHTML=`<div class="nm">Construcciones Paco Coca</div>
  <div class="hd">${md}${$('mmail').value.trim()?v('mmail')+'<br>':''}${$('mtel').value.trim()?'Tlfno. '+v('mtel')+'<br>':''}${$('mnif').value.trim()?'N.I.F.: '+v('mnif'):''}</div>
  <h3>${$('tipo').value}</h3>
@@ -152,8 +187,7 @@ function render(sub,iva,tot,on,pres){
  <table style="margin-top:4px"><tr><th>Concepto</th><th class="p">Precio Euros</th></tr>${rows}</table>
  <div class="t">${on?`SUBTOTAL ${fmt(sub)}<br>I.V.A. ${v('iva')} % ${fmt(iva)}<br><b>TOTAL ${fmt(tot)}</b>`:`<b>${pres?'TOTAL DE ESTE PRESUPUESTO':'TOTAL'} ${fmt(tot)}</b>`}</div>
  ${$('octa').checked?`<p style="margin-top:30px">A ingresar en la cuenta nº ${v('cta')}</p>`:''}
- ${$('onota').checked?`<div class="nota"><u>Nota.</u>${nl($('nota').value)}</div>`:''}
- ${$('acl').value.trim()?`<div class="nota">${nl($('acl').value)}</div>`:''}
+ ${(hasN||hasA)?`<div class="pgnota">${hasN?`<div class="nota"><u>Nota.</u>${nl($('nota').value)}</div>`:''}${hasA?`<div class="nota">${nl($('acl').value)}</div>`:''}</div>`:''}
  ${$('ofir').checked?`<div class="fir"><div>Conforme propietario</div><div>Conforme constructor</div></div>`:''}`}
 function setTipo(){
  const p=$('tipo').value==='PRESUPUESTO';
