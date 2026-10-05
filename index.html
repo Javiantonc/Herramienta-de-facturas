@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Facturas y presupuestos – Construcciones Paco Coca</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:#000;font:15px/1.4 Calibri,Arial,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 12px;border-bottom:2px solid #000;padding-bottom:6px}
+.card{border:1.5px solid #000;border-radius:4px;padding:14px;margin-bottom:14px;background:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+label{font-size:12px;display:block;margin-bottom:3px;font-weight:700}
+input,select,textarea{width:100%;padding:7px;border:1px solid #000;border-radius:3px;background:#fff;color:#000;font:inherit}
+button{padding:9px 14px;border:1.5px solid #000;border-radius:3px;background:#000;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+button.sec{background:#fff;color:#000}
+.row{display:grid;grid-template-columns:1fr 110px 56px 36px;gap:8px;align-items:start;padding:10px 0;border-top:1px solid #000}
+.row .c{display:flex;flex-direction:column;gap:6px}
+.chk{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:700}
+.chk input{width:auto}.row .chk{padding-top:24px}
+.row.k .pr,.row.k .chk{visibility:hidden}
+.x{padding:8px;margin-top:20px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.opts{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}
+.tot{margin-top:12px;text-align:right;font-size:16px}.tot b{font-size:20px}
+#pv{overflow-x:auto}
+#pv .doc{min-width:560px;font:14px/1.45 Calibri,Arial,sans-serif;padding:8px}
+.doc .nm{font-size:18px;font-weight:700}.doc .hd{font-size:12px;margin:6px 0 20px}
+.doc h3{text-align:center;margin:8px 0}
+.doc table{width:100%;border-collapse:collapse}
+.doc th{text-align:left;border-bottom:2px solid #000;padding:4px}
+.doc td{padding:5px 4px;vertical-align:top}.doc .p{text-align:right;white-space:nowrap}
+.doc .sec{text-align:center;font-weight:700;text-decoration:underline;padding-top:14px}
+.doc .top{border-top:2px solid #000;margin-top:10px;padding-top:6px}
+.doc .t{margin-top:18px;text-align:right}
+.doc .nota{margin-top:20px;font-size:13px}.doc .nota p{margin:4px 0}
+.doc .fir{display:flex;justify-content:space-around;margin-top:30px;height:110px}
+@page{margin:14mm;@bottom-right{content:"Página " counter(page) " de " counter(pages)}}
+@media (max-width:620px){.row{grid-template-columns:1fr 90px}}
+@media print{.noprint{display:none!important}.wrap{padding:0}#pv{border:0;padding:0}}
+</style></head><body>
+<div class="wrap">
+<h1 class="noprint">Facturas y presupuestos — Construcciones Paco Coca</h1>
+
+<div class="card noprint"><div class="grid">
+ <div><label>Tipo de documento</label><select id="tipo" onchange="setTipo()"><option value="FACTURA">Factura</option><option value="PRESUPUESTO">Presupuesto</option></select></div>
+ <div><label id="lnf">Nº de factura</label><input id="nf"></div>
+ <div><label>Fecha</label><input id="fe" type="date"></div>
+ <div><label>Nombre</label><input id="nom"></div>
+ <div><label>Apellidos</label><input id="ape"></div>
+ <div><label>NIF/CIF</label><input id="nif"></div>
+ <div><label>Dirección</label><input id="dir"></div>
+ <div><label>Población</label><input id="pob"></div>
+ <div><label>Provincia</label><input id="pro"></div>
+ <div><label>C.P.</label><input id="cp"></div>
+</div></div>
+
+<div class="card noprint">
+ <div id="rows"></div>
+ <div class="bar"><button onclick="addRow()">+ Añadir concepto</button>
+  <span style="margin-left:auto;display:flex;align-items:center;gap:6px"><label style="margin:0">IVA %</label><input id="iva" type="number" value="21" style="width:70px"></span></div>
+ <div class="opts">
+  <label class="chk"><input type="checkbox" id="oiva" checked>Aplicar IVA</label>
+  <label class="chk"><input type="checkbox" id="onota">Nota (condiciones)</label>
+  <label class="chk"><input type="checkbox" id="octa" checked>Cuenta bancaria</label>
+  <label class="chk"><input type="checkbox" id="ofir" checked>Firmas</label>
+ </div>
+</div>
+
+<div class="card noprint">
+ <b>Datos de la empresa</b> <span style="font-size:12px">(se guardan en este navegador y salen al imprimir)</span>
+ <div class="grid" style="margin-top:8px">
+  <div><label>Calle / dirección</label><input class="emp" id="mdir" value=""></div>
+  <div><label>Teléfono</label><input class="emp" id="mtel" value="616 38 50 68"></div>
+  <div><label>N.I.F.</label><input class="emp" id="mnif" value="00404968 F"></div>
+  <div><label>Email</label><input class="emp" id="mmail" value="paco_coca@hotmail.com"></div>
+  <div><label>IBAN / cuenta para ingresar</label><input class="emp" id="cta" value=""></div>
+ </div>
+ <label style="margin-top:10px">Aclaraciones (salen debajo de la Nota)</label>
+ <select id="acs" onchange="addAcl()"></select>
+ <textarea id="acl" rows="3" style="margin-top:6px"></textarea>
+ <label style="margin-top:10px">Nota / condiciones</label><textarea id="nota" rows="9"></textarea>
+</div>
+
+<div class="card noprint">
+ <div class="bar" style="margin:0"><button onclick="calc()">Calcular todo</button><button class="sec" onclick="window.print()">🖨️ Imprimir</button><button class="sec" onclick="newInv()">Nuevo documento</button></div>
+ <div class="tot" id="tot"></div>
+</div>
+
+<div class="card" id="pv"><div class="noprint" style="font-weight:700;margin-bottom:6px">Vista previa</div><div class="doc" id="doc"></div></div>
+
+</div>
+
+<script>
+const S='S',T='T';
+const BASE=[
+["Títulos de sección",[["Baño planta baja",S],["Baño planta alta",S],["Sanitarios",S],["Garaje",S],["Demolición y preparación de tabiques y suelos",S],["Garaje solados y alicatados",S],["Dormitorio planta alta",S],["Carpintería de PVC en blanco",S],["Fontanería, electricidad",S]]],
+["Textos sin precio",[["Factura correspondiente a los trabajos que se han realizado en la c/ ... nº ... de ...",T],["La instalación eléctrica que se necesite presupuestará según lo que se necesite hacer",T],["Se ha presupuestado 1 contenedor, si hiciera falta más se sumaría al presupuesto",T],["El lavabo y el mueble lo sirve la propiedad",T],["Pintura en interior dormitorio: presupuestar después",T],["Pintura en exterior dormitorio: presupuestar después",T]]],
+["Demolición y desmontaje",[["Desmontar sanitarios",80],["Desmontar azulejos de paredes",180],["Desmontar suelo",100],["Desmontar fontanería actual",70],["Desmontar puerta salida terraza y muro de ladrillo macizo división dormitorio con terraza",600],["Desmontar suelo dormitorio de parquet y rodapié",100],["Desmontar o nivelar suelo terraza que ampliamos",150],["Desmontar barandilla actual de madera 2 unidades",95],["Apertura de dos huecos de ventanas en fachada",300],["Nivelación de suelos para su posterior colocación de plaquetas con imprimación anterior y solera de cemento al estar con pintura y no agarraría el pegamento",1874],["Bodega",477],["Sala",348],["Despensa",441],["Huecos",183],["Aseo desmontar azulejos paredes",105],["Aseo suelo",53],["Desmontar puertas y cercos actuales",105],["Demolición de tabiques innecesarios",475]]],
+["Escombros, contenedor y portes",[["Retirada de escombros a contenedor",225],["Bajada y retirada de escombros a contenedor",750],["Retirada de escombros zona garaje a contenedor",475],["1 Contenedor",300],["Portes y acopio de material",250],["Tiempo y material tapar huecos en garaje",367],["Habilitar zona despensa paredes",630]]],
+["Fontanería y electricidad",[["Hacer fontanería toda con tuberías de cobre o multicapa, lo que pida la obra, así como desagües en PVC",800],["Hacer rozas para fontanería y para luz",60],["Hacer instalación de luz para dos enchufes y dos encendidos",220],["Se cobrará a 60 € punto de enchufe",60],["Se cobrará a 75 € punto de conmutada",75],["Se cobrará a 50 € punto de encendido sencillo",50],["Se cobrará a 60 € puntos dobles",60],["Rozas, cajas de mecanismo y cajas de registro a 15 € el metro lineal",15],["Cambiar llave de encendido de escalera, conducción y cableado",40],["Instalación de radiador (dormitorio)",250],["Trabajos de drenaje en la vivienda y fontanería exterior",2500]]],
+["Albañilería y acabados",[["Colocación de azulejos en paredes, mano de obra y material de agarre, los azulejos y suelos los sirve la propiedad",1080],["Colocación de suelo, mano de obra y material de agarre",210],["Hacer muro de cerramiento terraza dormitorio con ladrillo de medio pie en exterior, cámara de aire con aislamiento de lana de roca y parte interior con tabiquería metálica y placas de pladur, así como enfoscado exterior",2100],["Colocación suelo de tarima laminada, así como rodapié, mano de obra, el material lo sirve la propiedad",400],["Formación de tabique de perfilería metálica y placas de pladur en cerramiento tiro de escalera en ambos lados",1050],["Suministro y colocación de lana de roca en pladur",55],["Suministro y colocación de rodapié en toda la sala, de 9 centímetros",300],["Solados y alicatados: garaje, bodega, sala, huecos, despensa, aseo y azulejos paredes aseo",5512]]],
+["Carpintería",[["Suministro y colocación de puerta de paso de 2.03x0.725 ciega, lacada en blanco modelo N-4 de Puertas Nara con tapetas de 70x12, herrajes INOX., manivela modelo Ola, cortada a falseo según techo",494],["Suministro y colocación de puerta corredera lacada en blanco modelo N-4 de Puertas Nara con kit de colocación y molduras, juego de cazoleta condena + dedal inox.",494],["Suministro y colocación de contra-cerco para puerta",95],["Suministro y colocación de fijo en madera de 2x50 blanco, vidrio mateado",250],["Suministro y colocación de una puerta balconera dos hojas en corredera de 2.40x1.40 incluido cajón de persiana con vidrios de 6/14/4 mm. bajo emisivo y control solar, persiana de aluminio térmico, cajón aislado, cinta de persiana",1690],["Puerta balconera PVC color beige estándar",2197]]],
+["Sanitarios",[["Suministro y colocación de un inodoro modelo The Gap blanco con tapa amortiguada",498],["Suministro y colocación de un plato de ducha de 1.00 x 0.70 blanco extraplano modelo Terrain",535]]],
+["Pintura",[["Pintura techo baño planta alta",150],["Pintura según están los paramentos haciendo sus reparos de emplastecido y lijado en plástico color a elegir siendo suaves",450],["Pintura en terraza exterior zona ampliada en color similar",275]]]
+];
+const ACL=["El cerramiento sería el mismo que tiene ahora, pero nuevo; se pondría en su interior perfilería metálica y placa de pladur estándar de 13 mm. de espesor y la lana de roca de 40 mm., la misma que tenga ahora.","El suelo de la terraza lo elegirían Vds., así como ponerlo.","La tela asfáltica no hay que cambiarla.","El radiador del dormitorio no está presupuestado y quedaría el mismo; si hubiera que hacer instalación para cambiarlo se cobrarían 250 € de instalación.","El color de la puerta de PVC está presupuestada blanca y los cristales son térmicos; el cierre de seguridad es un sistema bueno.","El enfoscado del exterior está incluido en el cerramiento."];
+const NOTA=`- En este presupuesto entran todos los materiales y mano de obra para los capítulos aquí especificados, excluyendo los que sirve la propiedad
+- No entran en este presupuesto licencia de obra o cualquier requisito oficial que se necesite tanto del ayuntamiento como de la comunidad de propietarios, que será servido por la propiedad, así como la tasa de ocupación de la vía pública para contenedores.
+- El I.V.A. no está incluido, será ajustado a la facturación final, ya que se pueden quitar o aumentar capítulos de este presupuesto.
+- Forma de pago, el 50 % al comienzo de la obra y el resto a su terminación
+- Los precios reflejados en este presupuesto están sujetos a las tarifas vigentes en la fecha de emisión. Cualquier variación posterior en los costes de materiales, suministros o servicios ajena a la empresa podrá repercutirse al cliente, quién asumirá íntegramente dichos incrementos
+- Este presupuesto tiene una validez de 15 días.`;
+const $=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString('es-ES',{maximumFractionDigits:2})+' €';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function opts(){
+ let h='<option value="">— Elegir concepto —</option><option value="__c">✏️ Personalizado</option>';
+ const g=[...BASE];
+ g.forEach(([n,l])=>{h+=`<optgroup label="${n}">`+l.map(([t,p])=>{const k=(p===S||p===T)?p:'';const s=t.length>70?t.slice(0,70)+'…':t;return `<option value="${esc(t)}" data-p="${k?'':p}" data-k="${k}">${esc(s)}${k?'':' — '+p+' €'}</option>`}).join('')+'</optgroup>'});
+ return h}
+function addRow(){
+ const d=document.createElement('div');d.className='row';
+ d.innerHTML=`<div class="c"><select onchange="pick(this)">${opts()}</select><textarea rows="2" placeholder="Descripción en el documento"></textarea></div>
+ <div class="pr"><label>Precio €</label><input type="number" step="0.01"></div>
+ <label class="chk"><input type="checkbox" checked>IVA</label>
+ <button class="x sec" onclick="this.parentNode.remove();calc()">✕</button>`;
+ $('rows').appendChild(d)}
+function pick(s){
+ const r=s.closest('.row'),ta=r.querySelector('textarea'),pr=r.querySelector('input[type=number]'),o=s.selectedOptions[0];
+ r.dataset.k='';r.classList.remove('k');
+ if(s.value==='__c'){ta.value='';pr.value='';ta.focus()}
+ else if(s.value){ta.value=s.value;pr.value=o.dataset.p;if(o.dataset.k){r.dataset.k=o.dataset.k;r.classList.add('k')}}}
+function lines(){return [...document.querySelectorAll('.row')].map(r=>({t:r.querySelector('textarea').value.trim(),p:parseFloat(r.querySelector('input[type=number]').value),i:r.querySelector('input[type=checkbox]').checked,k:r.dataset.k||''})).filter(l=>l.t||l.p)}
+function calc(){
+ const L=lines().filter(l=>!l.k&&l.p),r=(parseFloat($('iva').value)||0)/100,on=$('oiva').checked,pres=$('tipo').value==='PRESUPUESTO';
+ const sub=L.reduce((a,l)=>a+l.p,0),iva=on?L.filter(l=>l.i).reduce((a,l)=>a+l.p*r,0):0,tot=sub+iva;
+ $('tot').innerHTML=on?`SUBTOTAL: ${fmt(sub)}<br>I.V.A. ${$('iva').value}%: ${fmt(iva)}<br><b>TOTAL: ${fmt(tot)}</b>`:`<b>${pres?'TOTAL DE ESTE PRESUPUESTO':'TOTAL'}: ${fmt(tot)}</b>`;
+ render(sub,iva,tot,on,pres)}
+function render(sub,iva,tot,on,pres){
+ const v=id=>esc($(id).value),f=$('fe').value?new Date($('fe').value+'T00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}):'';
+ const rows=lines().map(l=>l.k===S?`<tr><td colspan="2" class="sec">${esc(l.t)}</td></tr>`:`<tr><td>${l.k?'':'- '}${esc(l.t).replace(/\n/g,'<br>')}</td><td class="p">${l.k||!l.p?'':fmt(l.p)}</td></tr>`).join('');
+ const nl=t=>esc(t).split('\n').map(x=>`<p>${x}</p>`).join('');
+ const md=$('mdir').value.trim()?esc($('mdir').value.trim()).replace(/\n/g,'<br>')+'<br>':'';
+ $('doc').innerHTML=`<div class="nm">Construcciones Paco Coca</div>
+ <div class="hd">${md}${$('mmail').value.trim()?v('mmail')+'<br>':''}${$('mtel').value.trim()?'Tlfno. '+v('mtel')+'<br>':''}${$('mnif').value.trim()?'N.I.F.: '+v('mnif'):''}</div>
+ <h3>${$('tipo').value}</h3>
+ <table><tr><td>Nombre: ${v('nom')}<br>Apellidos: ${v('ape')}<br>Dirección: ${v('dir')}<br>Población: ${v('pob')}<br>Provincia: ${v('pro')}<br>C.P.: ${v('cp')}</td>
+ <td>${pres?'':'Nº de Factura: '+v('nf')+'<br>'}NIF/CIF: ${v('nif')}</td></tr></table>
+ <div class="top"><u>Fecha &nbsp; ${f}</u></div>
+ <table style="margin-top:4px"><tr><th>Concepto</th><th class="p">Precio Euros</th></tr>${rows}</table>
+ <div class="t">${on?`SUBTOTAL ${fmt(sub)}<br>I.V.A. ${v('iva')} % ${fmt(iva)}<br><b>TOTAL ${fmt(tot)}</b>`:`<b>${pres?'TOTAL DE ESTE PRESUPUESTO':'TOTAL'} ${fmt(tot)}</b>`}</div>
+ ${$('octa').checked?`<p style="margin-top:30px">A ingresar en la cuenta nº ${v('cta')}</p>`:''}
+ ${$('onota').checked?`<div class="nota"><u>Nota.</u>${nl($('nota').value)}</div>`:''}
+ ${$('acl').value.trim()?`<div class="nota">${nl($('acl').value)}</div>`:''}
+ ${$('ofir').checked?`<div class="fir"><div>Conforme propietario</div><div>Conforme constructor</div></div>`:''}`}
+function setTipo(){
+ const p=$('tipo').value==='PRESUPUESTO';
+ $('lnf').textContent=p?'Nº de presupuesto (opcional)':'Nº de factura';
+ $('oiva').checked=!p;$('onota').checked=p;
+ $('octa').checked=!p;$('ofir').checked=!p;calc()}
+function addAcl(){const s=$('acs');if(s.value){$('acl').value+=($('acl').value?'\n':'')+s.value;s.selectedIndex=0;calc()}}
+function newInv(){$('rows').innerHTML='';document.querySelectorAll('.card input:not(#iva):not([type=checkbox]):not(.emp)').forEach(i=>i.value='');$('acl').value='';addRow();calc()}
+$('acs').innerHTML='<option value="">— Elegir aclaración —</option>'+ACL.map(a=>`<option value="${esc(a)}">${esc(a.slice(0,70))}…</option>`).join('');
+$('nota').value=NOTA;$('fe').valueAsDate=new Date();
+const EMP=['mdir','mtel','mnif','mmail','cta'];
+try{const d=JSON.parse(localStorage.getItem('emp')||'{}');EMP.forEach(k=>{if(d[k]!==undefined)$(k).value=d[k]})}catch(e){}
+function saveEmp(){try{const d={};EMP.forEach(k=>d[k]=$(k).value);localStorage.setItem('emp',JSON.stringify(d))}catch(e){}}
+document.querySelector('.wrap').addEventListener('input',e=>{if(e.target.classList.contains('emp'))saveEmp()});
+document.querySelector('.wrap').addEventListener('input',calc);
+document.querySelector('.wrap').addEventListener('change',calc);
+addRow();calc();
+</script></body></html>
