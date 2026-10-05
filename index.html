@@ -71,7 +71,7 @@ button.sec{background:#fff;color:#000}
   <span style="margin-left:auto;display:flex;align-items:center;gap:6px"><label style="margin:0">IVA %</label><input id="iva" type="number" value="21" style="width:70px"></span></div>
  <div class="opts">
   <label class="chk"><input type="checkbox" id="oiva" checked>Aplicar IVA</label>
-  <label class="chk"><input type="checkbox" id="onota">Nota (condiciones)</label>
+  <label class="chk"><input type="checkbox" id="onota" checked>Nota (condiciones)</label>
   <label class="chk"><input type="checkbox" id="octa" checked>Cuenta bancaria</label>
   <label class="chk"><input type="checkbox" id="ofir" checked>Firmas</label>
  </div>
@@ -192,7 +192,7 @@ function render(sub,iva,tot,on,pres){
 function setTipo(){
  const p=$('tipo').value==='PRESUPUESTO';
  $('lnf').textContent=p?'Nº de presupuesto (opcional)':'Nº de factura';
- $('oiva').checked=!p;$('onota').checked=p;
+ $('oiva').checked=!p;
  $('octa').checked=!p;$('ofir').checked=!p;calc()}
 function addAcl(){const s=$('acs');if(s.value){$('acl').value+=($('acl').value?'\n':'')+s.value;s.selectedIndex=0;calc()}}
 function newInv(){$('rows').innerHTML='';document.querySelectorAll('.card input:not(#iva):not([type=checkbox]):not(.emp)').forEach(i=>i.value='');$('acl').value='';addRow();calc()}
@@ -204,5 +204,6 @@ function saveEmp(){try{const d={};EMP.forEach(k=>d[k]=$(k).value);localStorage.s
 document.querySelector('.wrap').addEventListener('input',e=>{if(e.target.classList.contains('emp'))saveEmp()});
 document.querySelector('.wrap').addEventListener('input',calc);
 document.querySelector('.wrap').addEventListener('change',calc);
+window.addEventListener('beforeprint',calc);
 addRow();calc();
 </script></body></html>
